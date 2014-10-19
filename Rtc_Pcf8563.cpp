@@ -16,6 +16,8 @@
  *    28/02/2012 A. Pasotti
  *             fixed a bug in RTCC_ALARM_AF,
  *             added a few (not really useful) methods
+ *    15/10/2014 add voltLow get/set, cevich
+ *    19/10/2014 Fix get/set date/time race condition, cevich
 
  *  TODO
  *    x Add Euro date format
@@ -44,7 +46,7 @@ void Rtc_Pcf8563::initClock()
 
   Wire.write((byte)0x0);     //control/status1
   Wire.write((byte)0x0);     //control/status2
-  Wire.write((byte)0x01);     //set seconds
+  Wire.write((byte)0x81);     //set seconds & VL
   Wire.write((byte)0x01);    //set minutes
   Wire.write((byte)0x01);    //set hour
   Wire.write((byte)0x01);    //set day
@@ -83,46 +85,46 @@ void Rtc_Pcf8563::clearStatus()
 }
 
 void Rtc_Pcf8563::setDateTime(byte day, byte weekday, byte month, byte century, byte year,
-                              byte hour, byte minute, byte sec)
+                              byte hour, byte minute, byte sec, bool volt_low)
 {
-    /* As per data sheet, have to set everything all in one operation */
-    Wire.beginTransmission(Rtcc_Addr);    // Issue I2C start signal
-    Wire.write((byte)RTCC_SEC_ADDR);       // send addr low byte, req'd
-    Wire.write((byte)decToBcd(sec));         //set seconds
-    Wire.write((byte)decToBcd(minute));    //set minutes
-    Wire.write((byte)decToBcd(hour));        //set hour
-    Wire.write((byte)decToBcd(day));            //set day
-    Wire.write((byte)decToBcd(weekday));    //set weekday
-
     /* year val is 00 to 99, xx
         with the highest bit of month = century
         0=20xx
         1=19xx
         */
-    month = decToBcd(mon);
+    month = decToBcd(month);
     if (century == 1){
         month |= RTCC_CENTURY_MASK;
     }
     else {
         month &= ~RTCC_CENTURY_MASK;
     }
+
+    /* As per data sheet, have to set everything all in one operation */
+    Wire.beginTransmission(Rtcc_Addr);    // Issue I2C start signal
+    Wire.write((byte)RTCC_SEC_ADDR);       // send addr low byte, req'd
+    Wire.write((byte)decToBcd(sec) | (volt_low<<7)); //set seconds + VL bit
+    Wire.write((byte)decToBcd(minute));    //set minutes
+    Wire.write((byte)decToBcd(hour));        //set hour
+    Wire.write((byte)decToBcd(day));            //set day
+    Wire.write((byte)decToBcd(weekday));    //set weekday
     Wire.write((byte)month);                 //set month, century to 1
     Wire.write((byte)decToBcd(year));        //set year to 99
     Wire.endTransmission();
 }
 
-void Rtc_Pcf8563::setTime(byte hour, byte minute, byte sec)
+void Rtc_Pcf8563::setTime(byte hour, byte minute, byte sec, bool volt_low)
 {
     getDateTime();
     setDateTime(getDay(), getWeekday(), getMonth(), getCentury(), getYear(),
-                hour, minute, sec);
+                hour, minute, sec, volt_low);
 }
 
 void Rtc_Pcf8563::setDate(byte day, byte weekday, byte mon, byte century, byte year)
 {
     getDateTime();
     setDateTime(day, weekday, mon, century, year,
-                getHour(), getMinute(), getSecond());
+                getHour(), getMinute(), getSecond(), getVoltLow());
 }
 
 /* enable alarm interrupt
@@ -326,6 +328,7 @@ void Rtc_Pcf8563::getDateTime(void)
 
     // time bytes
     //0x7f = 0b01111111
+    voltLow = readBuffer[2] & 0x80;  //VL_Seconds
     sec = bcdToDec(readBuffer[2] & 0x7f);
     minute = bcdToDec(readBuffer[3] & 0x7f);
     //0x3f = 0b00111111
@@ -494,6 +497,12 @@ char *Rtc_Pcf8563::formatDate(byte style)
     }
     return strDate;
 }
+
+bool Rtc_Pcf8563::getVoltLow(void)
+{
+    return voltLow;
+}
+
 
 byte Rtc_Pcf8563::getSecond() {
     return sec;

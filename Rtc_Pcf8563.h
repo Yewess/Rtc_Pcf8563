@@ -29,30 +29,30 @@
 
 /* the read and write values for pcf8563 rtcc */
 /* these are adjusted for arduino */
-#define RTCC_R 	0xa3
-#define RTCC_W 	0xa2
+#define RTCC_R	0xa3
+#define RTCC_W	0xa2
 
-#define RTCC_SEC 			1
-#define RTCC_MIN 			2
-#define RTCC_HR 			3
-#define RTCC_DAY 			4
+#define RTCC_SEC        1
+#define RTCC_MIN		2
+#define RTCC_HR			3
+#define RTCC_DAY		4
 #define RTCC_WEEKDAY	5
-#define RTCC_MONTH 		6
-#define RTCC_YEAR 		7
-#define RTCC_CENTURY 	8
+#define RTCC_MONTH		6
+#define RTCC_YEAR		7
+#define RTCC_CENTURY	8
 
 /* register addresses in the rtc */
 #define RTCC_STAT1_ADDR			0x0
 #define RTCC_STAT2_ADDR			0x01
-#define RTCC_SEC_ADDR  			0x02
-#define RTCC_MIN_ADDR 			0x03
-#define RTCC_HR_ADDR 			0x04
-#define RTCC_DAY_ADDR 			0x05
+#define RTCC_SEC_ADDR		    0x02
+#define RTCC_MIN_ADDR			0x03
+#define RTCC_HR_ADDR			0x04
+#define RTCC_DAY_ADDR			0x05
 #define RTCC_WEEKDAY_ADDR		0x06
-#define RTCC_MONTH_ADDR 		0x07
-#define RTCC_YEAR_ADDR 			0x08
-#define RTCC_ALRM_MIN_ADDR 	    0x09
-#define RTCC_SQW_ADDR 	        0x0D
+#define RTCC_MONTH_ADDR		    0x07
+#define RTCC_YEAR_ADDR			0x08
+#define RTCC_ALRM_MIN_ADDR	    0x09
+#define RTCC_SQW_ADDR	        0x0D
 #define RTCC_TIMER1_ADDR        0x0E
 #define RTCC_TIMER2_ADDR        0x0E
 
@@ -60,20 +60,20 @@
  * set it to 1 to disable the alarm for that value.
  */
 #define RTCC_ALARM				0x80
-#define RTCC_ALARM_AIE 			0x02
-#define RTCC_ALARM_AF 			0x08 // 0x08 : not 0x04!!!!
+#define RTCC_ALARM_AIE			0x02
+#define RTCC_ALARM_AF			0x08 // 0x08 : not 0x04!!!!
 /* optional val for no alarm setting */
-#define RTCC_NO_ALARM				99
+#define RTCC_NO_ALARM			99
 
-#define RTCC_CENTURY_MASK 	0x80
+#define RTCC_CENTURY_MASK	    0x80
 
 /* date format flags */
-#define RTCC_DATE_WORLD			0x01
-#define RTCC_DATE_ASIA			0x02
-#define RTCC_DATE_US				0x04
+#define RTCC_DATE_WORLD		    0x01
+#define RTCC_DATE_ASIA		    0x02
+#define RTCC_DATE_US		    0x04
 /* time format flags */
-#define RTCC_TIME_HMS				0x01
-#define RTCC_TIME_HM				0x02
+#define RTCC_TIME_HMS			0x01
+#define RTCC_TIME_HM			0x02
 
 /* square wave contants */
 #define SQW_DISABLE     B00000000
@@ -93,23 +93,25 @@ class Rtc_Pcf8563 {
 
         void getDateTIme();     /* get date and time vals to local vars */
         void setDateTime(byte day, byte weekday, byte month, byte century, byte year,
-                         byte hour, byte minute, byte sec);
+                         byte hour, byte minute, byte sec, volt_low=0);
 		void getDate();			/* get date vals to local vars */
 		void setDate(byte day, byte weekday, byte month, byte century, byte year);
 		void getTime();    /* get time vars + 2 status bytes to local vars */
-		void setTime(byte hour, byte minute, byte sec);
+		void setTime(byte hour, byte minute, byte sec, bool volt_low=0);
 		void getAlarm();
 		byte readStatus2();
 		boolean alarmEnabled();
         boolean alarmActive();
 
         void enableAlarm(); /* activate alarm flag and interrupt */
-		void setAlarm(byte min, byte hour, byte day, byte weekday); /* set alarm vals, 99=ignore */
+        /* set alarm vals, 99=ignore */
+		void setAlarm(byte min, byte hour, byte day, byte weekday);
 		void clearAlarm();	/* clear alarm flag and interrupt */
 		void resetAlarm();  /* clear alarm flag but leave interrupt unchanged */
 		void setSquareWave(byte frequency);
 		void clearSquareWave();
 
+        bool getVoltLow();
 		byte getSecond();
 		byte getMinute();
 		byte getHour();
@@ -138,6 +140,7 @@ class Rtc_Pcf8563 {
 		/* time variables */
 		byte hour;
 		byte minute;
+        bool voltLow;
 		byte sec;
 		byte day;
 		byte weekday;
